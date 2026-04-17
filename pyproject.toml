@@ -7,10 +7,13 @@ authors = [
     { name = "Cosmin Tudor", email = "cosmin2dor@gmail.com" }
 ]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "sqlmodel>=0.0.38",
+]
 
 [project.scripts]
 cabal = "cabal_ai:main"
+db = "core.db:init_db"
 
 [build-system]
 requires = ["uv_build>=0.11.7,<0.12.0"]
