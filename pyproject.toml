@@ -27,3 +27,14 @@ dev = [
 
 [tool.pytest.ini_options]                                                                                                                                          
 norecursedirs = ["draft", ".venv"]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",                                                                                                                                                   
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
