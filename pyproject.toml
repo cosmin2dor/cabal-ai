@@ -1,6 +1,6 @@
 [project]
 name = "cabal-ai"
-version = "0.1.0"
+version = "0.0.1"
 description = "Your AI Team right on your Slack. Open-source and forkable."
 readme = "README.md"
 authors = [
