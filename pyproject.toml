@@ -1,6 +1,7 @@
 [project]
 name = "cabal-ai"
 version = "0.0.1"
+license = "AGPL-3.0-only"
 description = "Your AI Team right on your Slack. Open-source and forkable."
 readme = "README.md"
 authors = [
