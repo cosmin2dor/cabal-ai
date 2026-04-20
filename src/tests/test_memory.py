@@ -1,23 +1,20 @@
-import pytest
-
 from uuid import UUID
 
-from sqlmodel import select
+import pytest
+from sqlmodel import Session, select
 
+from memory.enums import Layer, Scope
 from memory.models import Memory
-from memory.enums import Scope, Layer
-from memory.repository import get_cold, count_hot
+from memory.repository import count_hot, get_cold
 from memory.service import MemoryService
 from memory.strategy import MaxN
-from tests.seeders import seed_memories
 from tests.mocks import MockCompressor
+from tests.seeders import seed_memories
 
 
-def test_save_model_persists_fields(session):
+def test_save_model_persists_fields(session: Session) -> None:
 
-    seed_memories(
-        session, agent="test_agent", scope=Scope.AGENT, layer=Layer.COLD, count=1
-    )
+    seed_memories(session, agent="test_agent", scope=Scope.AGENT, layer=Layer.COLD, count=1)
 
     memory = session.exec(select(Memory)).one()
 
@@ -30,17 +27,13 @@ def test_save_model_persists_fields(session):
     assert memory.content == "test_content_0"
 
 
-def test_max_n_read_returns_last_n_ordered_desc(session):
+def test_max_n_read_returns_last_n_ordered_desc(session: Session) -> None:
 
     # Create 5 hot memories for the same agent and scope
-    seed_memories(
-        session, agent="test_agent", scope=Scope.AGENT, layer=Layer.HOT, count=5
-    )
+    seed_memories(session, agent="test_agent", scope=Scope.AGENT, layer=Layer.HOT, count=5)
 
     # Create 2 cold memories for the same agent and scope
-    seed_memories(
-        session, agent="test_agent", scope=Scope.AGENT, layer=Layer.COLD, count=2
-    )
+    seed_memories(session, agent="test_agent", scope=Scope.AGENT, layer=Layer.COLD, count=2)
 
     strategy = MaxN(n=3)
 
@@ -52,12 +45,10 @@ def test_max_n_read_returns_last_n_ordered_desc(session):
     assert memories[2].content == "test_content_2" and memories[2].layer == Layer.HOT
 
 
-def test_max_n_read_returns_empty_list_if_no_hot_memories(session):
+def test_max_n_read_returns_empty_list_if_no_hot_memories(session: Session) -> None:
 
     # Create 2 cold memories for the same agent and scope
-    seed_memories(
-        session, agent="test_agent", scope=Scope.AGENT, layer=Layer.COLD, count=2
-    )
+    seed_memories(session, agent="test_agent", scope=Scope.AGENT, layer=Layer.COLD, count=2)
 
     strategy = MaxN(n=3)
 
@@ -66,49 +57,49 @@ def test_max_n_read_returns_empty_list_if_no_hot_memories(session):
     assert len(memories) == 0
 
 
-def test_max_n_should_rebuild_returns_true_when_exactly_n_hot_memories(session):
+def test_max_n_should_rebuild_returns_true_when_exactly_n_hot_memories(
+    session: Session,
+) -> None:
 
     strategy = MaxN(n=3)
 
-    seed_memories(
-        session, agent="test_agent", scope=Scope.AGENT, layer=Layer.HOT, count=3
-    )
+    seed_memories(session, agent="test_agent", scope=Scope.AGENT, layer=Layer.HOT, count=3)
     assert strategy.should_rebuild(session, Scope.AGENT, "test_agent") is True
 
 
-def test_max_n_should_rebuild_returns_true_when_more_than_n_hot_memories(session):
+def test_max_n_should_rebuild_returns_true_when_more_than_n_hot_memories(
+    session: Session,
+) -> None:
 
     strategy = MaxN(n=3)
 
-    seed_memories(
-        session, agent="test_agent", scope=Scope.AGENT, layer=Layer.HOT, count=5
-    )
+    seed_memories(session, agent="test_agent", scope=Scope.AGENT, layer=Layer.HOT, count=5)
     assert strategy.should_rebuild(session, Scope.AGENT, "test_agent") is True
 
 
-def test_max_n_should_rebuild_returns_false_if_less_than_n_hot_memories(session):
+def test_max_n_should_rebuild_returns_false_if_less_than_n_hot_memories(
+    session: Session,
+) -> None:
 
     strategy = MaxN(n=3)
 
     # Create 2 hot memories for the same agent and scope
-    seed_memories(
-        session, agent="test_agent", scope=Scope.AGENT, layer=Layer.HOT, count=2
-    )
+    seed_memories(session, agent="test_agent", scope=Scope.AGENT, layer=Layer.HOT, count=2)
     assert strategy.should_rebuild(session, Scope.AGENT, "test_agent") is False
 
 
-def test_max_n_should_rebuild_returns_false_if_no_hot_memories(session):
+def test_max_n_should_rebuild_returns_false_if_no_hot_memories(
+    session: Session,
+) -> None:
 
     strategy = MaxN(n=3)
 
     # Create 10 cold memories for the same agent and scope
-    seed_memories(
-        session, agent="test_agent", scope=Scope.AGENT, layer=Layer.COLD, count=10
-    )
+    seed_memories(session, agent="test_agent", scope=Scope.AGENT, layer=Layer.COLD, count=10)
     assert strategy.should_rebuild(session, Scope.AGENT, "test_agent") is False
 
 
-def test_max_n_read_does_not_leak_across_agents(session):
+def test_max_n_read_does_not_leak_across_agents(session: Session) -> None:
 
     seed_memories(
         session,
@@ -135,7 +126,7 @@ def test_max_n_read_does_not_leak_across_agents(session):
     assert all(m.content.startswith("coach") for m in memories)
 
 
-def test_max_n_read_does_not_leak_across_scopes(session):
+def test_max_n_read_does_not_leak_across_scopes(session: Session) -> None:
 
     seed_memories(
         session,
@@ -162,7 +153,7 @@ def test_max_n_read_does_not_leak_across_scopes(session):
     assert all(m.content.startswith("agent") for m in memories)
 
 
-def test_max_n_read_returns_global_rows_when_scope_is_global(session):
+def test_max_n_read_returns_global_rows_when_scope_is_global(session: Session) -> None:
 
     seed_memories(
         session,
@@ -181,7 +172,7 @@ def test_max_n_read_returns_global_rows_when_scope_is_global(session):
     assert all(m.agent is None for m in memories)
 
 
-def test_max_n_should_rebuild_works_for_global_scope(session):
+def test_max_n_should_rebuild_works_for_global_scope(session: Session) -> None:
 
     strategy = MaxN(n=3)
 
@@ -189,7 +180,7 @@ def test_max_n_should_rebuild_works_for_global_scope(session):
     assert strategy.should_rebuild(session, Scope.GLOBAL, None) is True
 
 
-def test_max_n_should_rebuild_isolates_counts_per_agent(session):
+def test_max_n_should_rebuild_isolates_counts_per_agent(session: Session) -> None:
 
     strategy = MaxN(n=3)
 
@@ -215,16 +206,16 @@ def test_max_n_should_rebuild_isolates_counts_per_agent(session):
 
 
 @pytest.fixture()
-def compressor():
+def compressor() -> MockCompressor:
     return MockCompressor(output="compressed_summary")
 
 
 @pytest.fixture()
-def service(compressor):
+def service(compressor: MockCompressor) -> MemoryService:
     return MemoryService(strategy=MaxN(n=3), compressor=compressor)
 
 
-def test_rebuild_compresses_hot_and_stores_cold(session, service):
+def test_rebuild_compresses_hot_and_stores_cold(session: Session, service: MemoryService) -> None:
     seed_memories(session, "test_agent", Scope.AGENT, Layer.HOT, 3)
 
     service.rebuild(session, Scope.AGENT, "test_agent")
@@ -234,7 +225,7 @@ def test_rebuild_compresses_hot_and_stores_cold(session, service):
     assert cold.content == "compressed_summary"
 
 
-def test_rebuild_clears_hot_after_storing_cold(session, service):
+def test_rebuild_clears_hot_after_storing_cold(session: Session, service: MemoryService) -> None:
     seed_memories(session, "test_agent", Scope.AGENT, Layer.HOT, 3)
 
     service.rebuild(session, Scope.AGENT, "test_agent")
@@ -242,10 +233,10 @@ def test_rebuild_clears_hot_after_storing_cold(session, service):
     assert count_hot(session, Scope.AGENT, "test_agent") == 0
 
 
-def test_rebuild_passes_hot_contents_to_compressor(session, service, compressor):
-    seed_memories(
-        session, "test_agent", Scope.AGENT, Layer.HOT, 3, content_prefix="msg"
-    )
+def test_rebuild_passes_hot_contents_to_compressor(
+    session: Session, service: MemoryService, compressor: MockCompressor
+) -> None:
+    seed_memories(session, "test_agent", Scope.AGENT, Layer.HOT, 3, content_prefix="msg")
 
     service.rebuild(session, Scope.AGENT, "test_agent")
 
@@ -255,7 +246,7 @@ def test_rebuild_passes_hot_contents_to_compressor(session, service, compressor)
     assert all(c.content.startswith("msg") for c in passed)
 
 
-def test_rebuild_does_not_affect_other_agent(session, service):
+def test_rebuild_does_not_affect_other_agent(session: Session, service: MemoryService) -> None:
     seed_memories(session, "test_agent", Scope.AGENT, Layer.HOT, 3)
     seed_memories(session, "other_agent", Scope.AGENT, Layer.HOT, 3)
 
@@ -265,7 +256,7 @@ def test_rebuild_does_not_affect_other_agent(session, service):
     assert get_cold(session, Scope.AGENT, "other_agent") is None
 
 
-def test_rebuild_does_not_affect_other_scope(session, service):
+def test_rebuild_does_not_affect_other_scope(session: Session, service: MemoryService) -> None:
     seed_memories(session, None, Scope.GLOBAL, Layer.HOT, 3)
     seed_memories(session, "test_agent", Scope.AGENT, Layer.HOT, 3)
 
@@ -275,13 +266,13 @@ def test_rebuild_does_not_affect_other_scope(session, service):
     assert get_cold(session, Scope.GLOBAL, None) is None
 
 
-def test_record_adds_hot_row(session, service):
+def test_record_adds_hot_row(session: Session, service: MemoryService) -> None:
     service.record(session, Scope.AGENT, "test_agent", "new content")
 
     assert count_hot(session, Scope.AGENT, "test_agent") == 1
 
 
-def test_record_triggers_rebuild_at_threshold(session, service):
+def test_record_triggers_rebuild_at_threshold(session: Session, service: MemoryService) -> None:
     seed_memories(session, "test_agent", Scope.AGENT, Layer.HOT, 2)
 
     service.record(session, Scope.AGENT, "test_agent", "trigger")
@@ -291,7 +282,7 @@ def test_record_triggers_rebuild_at_threshold(session, service):
     assert count_hot(session, Scope.AGENT, "test_agent") == 0
 
 
-def test_record_does_not_rebuild_below_threshold(session, service):
+def test_record_does_not_rebuild_below_threshold(session: Session, service: MemoryService) -> None:
     seed_memories(session, "test_agent", Scope.AGENT, Layer.HOT, 1)
 
     service.record(session, Scope.AGENT, "test_agent", "below threshold")
@@ -299,7 +290,7 @@ def test_record_does_not_rebuild_below_threshold(session, service):
     assert get_cold(session, Scope.AGENT, "test_agent") is None
 
 
-def test_record_does_not_affect_other_agent(session, service):
+def test_record_does_not_affect_other_agent(session: Session, service: MemoryService) -> None:
     seed_memories(session, "other_agent", Scope.AGENT, Layer.HOT, 2)
 
     service.record(session, Scope.AGENT, "test_agent", "isolated")
@@ -308,13 +299,11 @@ def test_record_does_not_affect_other_agent(session, service):
     assert get_cold(session, Scope.AGENT, "other_agent") is None
 
 
-def test_build_context_returns_hot_rows_and_cold(session, service):
+def test_build_context_returns_hot_rows_and_cold(session: Session, service: MemoryService) -> None:
     seed_memories(session, "test_agent", Scope.AGENT, Layer.HOT, 3)
     service.rebuild(session, Scope.AGENT, "test_agent")
 
-    seed_memories(
-        session, "test_agent", Scope.AGENT, Layer.HOT, 1, content_prefix="new"
-    )
+    seed_memories(session, "test_agent", Scope.AGENT, Layer.HOT, 1, content_prefix="new")
 
     hot, cold = service.build_context(session, Scope.AGENT, "test_agent")
 
@@ -323,7 +312,9 @@ def test_build_context_returns_hot_rows_and_cold(session, service):
     assert cold.content == "compressed_summary"
 
 
-def test_build_context_does_not_bleed_across_agents(session, service):
+def test_build_context_does_not_bleed_across_agents(
+    session: Session, service: MemoryService
+) -> None:
     seed_memories(session, "test_agent", Scope.AGENT, Layer.HOT, 3)
     service.rebuild(session, Scope.AGENT, "test_agent")
 
@@ -335,10 +326,9 @@ def test_build_context_does_not_bleed_across_agents(session, service):
     assert cold is None
 
 
-# --- GLOBAL scope ---
-
-
-def test_rebuild_global_stores_cold_with_agent_none(session, service):
+def test_rebuild_global_stores_cold_with_agent_none(
+    session: Session, service: MemoryService
+) -> None:
     seed_memories(session, None, Scope.GLOBAL, Layer.HOT, 3)
 
     service.rebuild(session, Scope.GLOBAL, None)
@@ -349,7 +339,7 @@ def test_rebuild_global_stores_cold_with_agent_none(session, service):
     assert cold.content == "compressed_summary"
 
 
-def test_rebuild_global_clears_hot(session, service):
+def test_rebuild_global_clears_hot(session: Session, service: MemoryService) -> None:
     seed_memories(session, None, Scope.GLOBAL, Layer.HOT, 3)
 
     service.rebuild(session, Scope.GLOBAL, None)
@@ -357,13 +347,15 @@ def test_rebuild_global_clears_hot(session, service):
     assert count_hot(session, Scope.GLOBAL, None) == 0
 
 
-def test_record_global_adds_hot_row(session, service):
+def test_record_global_adds_hot_row(session: Session, service: MemoryService) -> None:
     service.record(session, Scope.GLOBAL, None, "global content")
 
     assert count_hot(session, Scope.GLOBAL, None) == 1
 
 
-def test_record_global_triggers_rebuild_at_threshold(session, service):
+def test_record_global_triggers_rebuild_at_threshold(
+    session: Session, service: MemoryService
+) -> None:
     seed_memories(session, None, Scope.GLOBAL, Layer.HOT, 2)
 
     service.record(session, Scope.GLOBAL, None, "trigger")
@@ -373,7 +365,9 @@ def test_record_global_triggers_rebuild_at_threshold(session, service):
     assert count_hot(session, Scope.GLOBAL, None) == 0
 
 
-def test_rebuild_global_does_not_affect_agent_scope(session, service):
+def test_rebuild_global_does_not_affect_agent_scope(
+    session: Session, service: MemoryService
+) -> None:
     seed_memories(session, None, Scope.GLOBAL, Layer.HOT, 3)
     seed_memories(session, "test_agent", Scope.AGENT, Layer.HOT, 3)
 
@@ -383,7 +377,9 @@ def test_rebuild_global_does_not_affect_agent_scope(session, service):
     assert get_cold(session, Scope.AGENT, "test_agent") is None
 
 
-def test_build_context_global_returns_hot_and_cold(session, service):
+def test_build_context_global_returns_hot_and_cold(
+    session: Session, service: MemoryService
+) -> None:
     seed_memories(session, None, Scope.GLOBAL, Layer.HOT, 3)
     service.rebuild(session, Scope.GLOBAL, None)
 
@@ -396,7 +392,9 @@ def test_build_context_global_returns_hot_and_cold(session, service):
     assert cold.content == "compressed_summary"
 
 
-def test_build_context_global_does_not_bleed_into_agent_scope(session, service):
+def test_build_context_global_does_not_bleed_into_agent_scope(
+    session: Session, service: MemoryService
+) -> None:
     seed_memories(session, None, Scope.GLOBAL, Layer.HOT, 3)
     service.rebuild(session, Scope.GLOBAL, None)
 

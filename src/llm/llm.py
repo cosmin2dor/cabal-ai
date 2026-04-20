@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-
-from typing import List, Literal
+from typing import Literal
 
 
 @dataclass
@@ -20,5 +19,5 @@ class Completion:
 
 class LLM(ABC):
     @abstractmethod
-    def complete(self, messages: List[Message]) -> Completion:
+    def complete(self, messages: list[Message]) -> Completion:
         pass

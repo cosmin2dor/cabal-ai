@@ -1,10 +1,10 @@
 import os
-
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator
-from sqlalchemy import Engine
-from sqlmodel import SQLModel, Session, create_engine
 from functools import lru_cache
+
+from sqlalchemy import Engine
+from sqlmodel import Session, SQLModel, create_engine
 
 
 def _register_models() -> None:
@@ -14,7 +14,7 @@ def _register_models() -> None:
     # Add here any additional models to be registered in the future
 
 
-@lru_cache()
+@lru_cache
 def get_engine() -> Engine:
     db_url = os.environ.get("CABAL_DATABASE_URL", "sqlite:///./db/cabal.sqlite3")
     engine = create_engine(db_url)

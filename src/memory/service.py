@@ -1,10 +1,9 @@
-from compressor import Compressor
-from memory import repository, Memory
-from memory.strategy import Strategy
 from sqlmodel import Session
 
+from compressor import Compressor
+from memory import Memory, repository
 from memory.enums import Scope
-from typing import Optional, Tuple, List
+from memory.strategy import Strategy
 
 
 class MemoryService:
@@ -16,9 +15,7 @@ class MemoryService:
     Stores new content
     """
 
-    def record(
-        self, session: Session, scope: Scope, agent: Optional[str], content: str
-    ):
+    def record(self, session: Session, scope: Scope, agent: str | None, content: str) -> None:
         repository.add_hot(session, scope, agent, content)
 
         if self.strategy.should_rebuild(session, scope, agent):
@@ -32,8 +29,8 @@ class MemoryService:
         self,
         session: Session,
         scope: Scope,
-        agent: Optional[str],
-    ):
+        agent: str | None,
+    ) -> None:
         hot = self.strategy.read(session, scope, agent)
         cold = self.compressor.compress(hot)
 
@@ -45,8 +42,8 @@ class MemoryService:
     """
 
     def build_context(
-        self, session: Session, scope: Scope, agent: Optional[str]
-    ) -> Tuple[List[Memory], Optional[Memory]]:
+        self, session: Session, scope: Scope, agent: str | None
+    ) -> tuple[list[Memory], Memory | None]:
         return (
             self.strategy.read(session, scope, agent),
             repository.get_cold(session, scope, agent),

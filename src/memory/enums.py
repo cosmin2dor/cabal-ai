@@ -1,11 +1,11 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class Scope(str, Enum):
+class Scope(StrEnum):
     GLOBAL = "global"
     AGENT = "agent"
 
 
-class Layer(str, Enum):
+class Layer(StrEnum):
     HOT = "hot"
     COLD = "cold"

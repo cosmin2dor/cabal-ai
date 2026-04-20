@@ -78,3 +78,6 @@ warn_unused_ignores = true
 exclude = [
     "draft/",
 ]
+
+[tool.ruff.lint.per-file-ignores]                                                                                                                                  
+"src/tests/conftest.py" = ["E402"]

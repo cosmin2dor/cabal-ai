@@ -1,19 +1,20 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
-from memory.enums import Scope, Layer
+from sqlmodel import Session
+
+from memory.enums import Layer, Scope
 from memory.models import Memory
 
 
 def seed_memories(
-    session,
-    agent: Optional[str],
+    session: Session,
+    agent: str | None,
     scope: Scope,
     layer: Layer,
     count: int,
     content_prefix: str = "test_content",
-):
-    base_time = datetime.now(timezone.utc)
+) -> None:
+    base_time = datetime.now(UTC)
     for i in range(count):
         memory = Memory(
             agent=agent,

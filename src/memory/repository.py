@@ -1,11 +1,10 @@
+from sqlmodel import Session, col, select
+
 from memory.enums import Layer, Scope
 from memory.models import Memory
-from sqlmodel import Session, select
-
-from typing import Optional
 
 
-def add_hot(session: Session, scope: Scope, agent: Optional[str], content: str):
+def add_hot(session: Session, scope: Scope, agent: str | None, content: str) -> None:
     memory = Memory(
         agent=agent,
         scope=scope,
@@ -16,30 +15,32 @@ def add_hot(session: Session, scope: Scope, agent: Optional[str], content: str):
     session.add(memory)
 
 
-def get_all_hot(session: Session, scope: Scope, agent: Optional[str]) -> list[Memory]:
-    return session.exec(
-        select(Memory)
-        .where(Memory.scope == scope)
-        .where(Memory.agent == agent)
-        .where(Memory.layer == Layer.HOT)
-        .order_by(Memory.created_at.desc())
-    ).all()
+def get_all_hot(session: Session, scope: Scope, agent: str | None) -> list[Memory]:
+    return list(
+        session.exec(
+            select(Memory)
+            .where(Memory.scope == scope)
+            .where(Memory.agent == agent)
+            .where(Memory.layer == Layer.HOT)
+            .order_by(col(Memory.created_at).desc())
+        ).all()
+    )
 
 
-def get_last_n_hot(
-    session: Session, scope: Scope, agent: Optional[str], n: int
-) -> list[Memory]:
-    return session.exec(
-        select(Memory)
-        .where(Memory.scope == scope)
-        .where(Memory.agent == agent)
-        .where(Memory.layer == Layer.HOT)
-        .order_by(Memory.created_at.desc())
-        .limit(n)
-    ).all()
+def get_last_n_hot(session: Session, scope: Scope, agent: str | None, n: int) -> list[Memory]:
+    return list(
+        session.exec(
+            select(Memory)
+            .where(Memory.scope == scope)
+            .where(Memory.agent == agent)
+            .where(Memory.layer == Layer.HOT)
+            .order_by(col(Memory.created_at).desc())
+            .limit(n)
+        ).all()
+    )
 
 
-def count_hot(session: Session, scope: Scope, agent: Optional[str]) -> int:
+def count_hot(session: Session, scope: Scope, agent: str | None) -> int:
     return len(
         session.exec(
             select(Memory)
@@ -50,7 +51,7 @@ def count_hot(session: Session, scope: Scope, agent: Optional[str]) -> int:
     )
 
 
-def clear_hot(session: Session, scope: Scope, agent: Optional[str]) -> None:
+def clear_hot(session: Session, scope: Scope, agent: str | None) -> None:
     hot_memories = session.exec(
         select(Memory)
         .where(Memory.scope == scope)
@@ -62,19 +63,17 @@ def clear_hot(session: Session, scope: Scope, agent: Optional[str]) -> None:
         session.delete(memory)
 
 
-def get_cold(session: Session, scope: Scope, agent: Optional[str]) -> Optional[Memory]:
+def get_cold(session: Session, scope: Scope, agent: str | None) -> Memory | None:
     return session.exec(
         select(Memory)
         .where(Memory.scope == scope)
         .where(Memory.agent == agent)
         .where(Memory.layer == Layer.COLD)
-        .order_by(Memory.created_at.desc())
+        .order_by(col(Memory.created_at).desc())
     ).first()
 
 
-def set_cold(
-    session: Session, scope: Scope, agent: Optional[str], content: str
-) -> None:
+def set_cold(session: Session, scope: Scope, agent: str | None, content: str) -> None:
     cold_memory = get_cold(session, scope, agent)
 
     if cold_memory:

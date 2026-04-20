@@ -1,23 +1,19 @@
 from compressor import Compressor
-from typing import List
-
+from llm import LLM, Completion, Message
 from memory.models import Memory
-from llm import LLM, Message, Completion
 
 
 class MockCompressor(Compressor):
-
     def __init__(self, output: str = "compressed_summary"):
         self.output = output
-        self.calls: List[List[Memory]] = []
+        self.calls: list[list[Memory]] = []
 
-    def compress(self, items: List[Memory]) -> str:
+    def compress(self, items: list[Memory]) -> str:
         self.calls.append(items)
         return self.output
 
 
 class MockLLM(LLM):
-
     def __init__(
         self,
         content: str = "mock response",
@@ -27,9 +23,9 @@ class MockLLM(LLM):
         self.content = content
         self.prompt_tokens = prompt_tokens
         self.completion_tokens = completion_tokens
-        self.calls: List[List[Message]] = []
+        self.calls: list[list[Message]] = []
 
-    def complete(self, messages: List[Message]) -> Completion:
+    def complete(self, messages: list[Message]) -> Completion:
         self.calls.append(messages)
         return Completion(
             content=self.content,
