@@ -1,1 +1,1 @@
-from compressor.compressor import Compressor  # noqa: F401
+from compressor.compressor import Compressor, LLMCompressor  # noqa: F401
